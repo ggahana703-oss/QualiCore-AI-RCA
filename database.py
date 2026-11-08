@@ -16,7 +16,10 @@ if not DATABASE_URL:
         "DATABASE_URL missing in backend/.env"
     )
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL.replace("postgres://", "postgresql+psycopg2://")
+    .replace("postgresql://", "postgresql+psycopg2://")
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
