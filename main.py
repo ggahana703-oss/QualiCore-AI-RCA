@@ -11,7 +11,7 @@ from pypdf import PdfReader
 from langgraph.graph import StateGraph, START, END
 from sqlalchemy.orm import Session
 
-from backend.database import Base, engine, SessionLocal
+from database import Base, engine, SessionLocal
 from backend.models import Investigation
 
 ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
