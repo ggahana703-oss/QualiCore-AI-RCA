@@ -12,15 +12,18 @@ from langgraph.graph import StateGraph, START, END
 from sqlalchemy.orm import Session
 
 from database import Base, engine, SessionLocal
-from backend.models import Investigation
+from models import Investigation
 
+# Load environment variables
 ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(ENV_PATH, override=True)
+load_dotenv(ENV_PATH)
+
 API_KEY = os.getenv("GROQ_API_KEY")
 
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-
+# Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -31,9 +34,13 @@ def get_db():
 
 app = FastAPI(title="AI RCA Assistant")
 
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://qualicore-ai-rca.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,7 +81,7 @@ class RCAState(TypedDict):
 
 def analyze_incident(state: RCAState):
     if not API_KEY:
-        raise ValueError("GROQ_API_KEY missing in backend/.env")
+        raise ValueError("GROQ_API_KEY missing")
 
     client = Groq(api_key=API_KEY)
 
@@ -137,6 +144,7 @@ Insufficient information must be listed in missing_evidence.
     return {"analysis": json.loads(response.choices[0].message.content)}
 
 
+# LangGraph workflow
 graph_builder = StateGraph(RCAState)
 graph_builder.add_node("analyze_incident", analyze_incident)
 graph_builder.add_edge(START, "analyze_incident")
@@ -207,10 +215,7 @@ def save_investigation(
 ):
     try:
         item = Investigation(
-            title=analysis.get(
-                "incident_title",
-                "Untitled Investigation",
-            ),
+            title=analysis.get("incident_title", "Untitled Investigation"),
             severity=analysis.get("severity", "Unknown"),
             status="Pending Review",
             analysis=analysis,
